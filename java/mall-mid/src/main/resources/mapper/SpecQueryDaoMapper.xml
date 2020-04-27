@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="org.xfh.mid.db.dao.SpecQueryDao">
+  
+  <select id="selectValuesByGroupId" parameterType="Long"
+        resultType="org.xfh.mid.db.po.ModalSpecValue" >
+        
+        select * from ModalSpecValue where groupId = #{groupId}
+    </select>
+  
+  <resultMap type="org.xfh.mid.vo.ModalSpecGroupVo" id="groupWithChildrenResult">
+        <id property="id" column="id" />
+        <result property="name" column="name" />
+        <!-- 一对多级联查询，ofType表示集合中的元素类型，将uid传递给selectOrdersByld -->
+        <collection 
+        	property="children" 
+        	ofType="org.xfh.mid.db.po.ModalSpecValue"
+        	select="selectValuesByGroupId"
+        	column="id"
+        	
+            >
+            
+            	<id column="id" property="id"/>
+            	<result column="value" property="value"/>
+            	<result column="order" property="order"/>
+            
+            </collection>
+            
+    </resultMap>
+  
+  <select id="getSpecGroupsWithChildren" parameterType="Long"
+        resultMap="groupWithChildrenResult">
+        select * from ModalSpecGroup where modalId = #{modalId}
+    </select>
+    
+    
+    
+</mapper>

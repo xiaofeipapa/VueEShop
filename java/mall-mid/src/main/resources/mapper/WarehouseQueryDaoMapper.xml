@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="org.xfh.mid.db.dao.WarehouseQueryDao">
+    		  
+	<select id="getWarehousePosPageList" resultType="org.xfh.mid.vo.WarehousePosVo">  
+
+		select 
+		
+			a.id, 
+			a.code, 
+			b.name as warehouseName
+
+		 from WarehousePos as a 
+		 
+		 
+		 left join Warehouse as b on b.id = a.warehouseId
+		 		 
+		 where 1 = 1 		
+	
+		<include refid="org.xfh.mid.db.indexSearchSql.INDEX_SEARCH_FILTER_SQL"/>		
+		
+		<include refid="org.xfh.mid.db.indexSearchSql.ORDER_BY_SQL"/>
+		
+		<include refid="org.xfh.mid.db.indexSearchSql.LIMIT_SQL"/>
+	</select>  
+  				  
+</mapper>

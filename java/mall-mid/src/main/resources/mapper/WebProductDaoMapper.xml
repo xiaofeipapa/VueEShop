@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="org.xfh.mid.db.dao.WebProductDao">
+
+	<resultMap type="org.xfh.mid.vo.web.WebModalSpecGroupVo" id="modalGroupWithChild">
+	        
+        <id column="id" property="id"/>
+           	
+        <!-- 一对多级联查询，ofType表示集合中的元素类型，将uid传递给selectOrdersByld -->
+        <collection 
+        	property="children" 
+        	select="getChildList"
+        	column="id"        	
+            >            	            
+         </collection>
+            
+    </resultMap>
+    
+	<select id="getChildList" resultType="org.xfh.mid.vo.web.WebModalSpecValueVo">  
+	
+		select *  from ModalSpecValue where groupId = #{id}
+				
+	</select>  
+
+	<select id="getModalSpecGroupWithValues" resultMap="modalGroupWithChild">  
+	
+		select * from ModalSpecGroup where modalId = #{modalId}
+		
+	</select>  	
+    
+	<sql id="product_sql">  
+		
+		select 
+		
+			a.id, 
+			a.modalId, 
+			a.marketPrice, 
+			a.retailPrice,
+			a.dataStatus, 
+			a.sku,
+					
+		 	<!-- 销售库存 -->
+			c.saleStock, 
+								
+		 	<!-- 规格属性值信息 -->
+    		d.specValueString, 
+    		d.specValueIdString, 
+			
+			b.title as modalTitle, 
+			b.imageStr as modalImages, 
+			b.brandId,
+			b.childCat1 as cat1
+			
+		 	<!-- 品牌 -->
+		 	,pb.name as brandName
+
+		 from Product as a 
+		 
+			 left join ProductModal as b on b.id = a.modalId
+		 
+		 	<!-- 品牌 -->
+			left join ProductBrand as pb on pb.id = b.brandId
+			 			 				
+		 	<!-- 销售库存 -->
+			left join (
+				select stock as saleStock, productId from SaleStock
+			) as c on a.id = c.productId
+			 			
+		 	<!-- 规格属性值信息 -->
+			LEFT JOIN
+			    (
+			    	
+					SELECT 
+				        GROUP_CONCAT(inner1.`specValueId`) as specValueIdString  , GROUP_CONCAT(inner1.`value`) AS specValueString, inner1.productId
+						FROM
+							(
+								(
+									select innerPsv.productId, innerPsv.specValueId, innerMsv.`value`
+					                
+					                from ProductSpecValue as innerPsv
+					                
+					                left join ModalSpecValue as innerMsv
+										on innerPsv.specValueId = innerMsv.id
+										
+				                )  as inner1
+				                    
+				                    
+				            )
+					GROUP BY productId
+				) 
+			AS d ON a.id = d.productId
+			
+		where 1=1
+				
+	</sql>  
+
+	<select id="getProductById" resultType="org.xfh.mid.vo.web.WebProductVo">  
+	
+		<include refid="product_sql"/>
+		
+		and a.id = #{id}
+		
+	</select>  	
+
+	<select id="getProductsByModalId" resultType="org.xfh.mid.vo.web.WebProductVo">  
+	
+		<include refid="product_sql"/>
+		
+		and a.modalId = #{modalId}
+		
+	</select>  	
+	
+
+	<select id="getProducts" resultType="org.xfh.mid.vo.web.WebProductVo">  
+	
+		<include refid="product_sql"/>
+		
+		and a.id in		
+		
+	   	<foreach collection="idList" separator="," open="(" close=")" index="index" item="item">
+			#{item}
+		</foreach>
+		
+	</select>  	
+	
+    
+	<sql id="like_product_sql">  
+	
+		select productId from UserLike 
+		
+		where 1=1 
+					
+	</sql>
+	
+	<select id="getLikeProductCount" resultType="int">  
+	
+		select count(ca_view.productId) from ( 
+		
+			<include refid="like_product_sql"/>
+			
+			<include refid="org.xfh.mid.db.indexSearchSql.INDEX_SEARCH_FILTER_SQL"/>
+		
+			) as ca_view		
+		
+	</select>
+
+	<select id="getLikeProducts" resultType="Long">  
+	
+		<include refid="like_product_sql"/>
+		
+		<include refid="org.xfh.mid.db.indexSearchSql.INDEX_SEARCH_FILTER_SQL"/>
+		
+		<include refid="org.xfh.mid.db.indexSearchSql.ORDER_BY_SQL"/>
+		
+		<include refid="org.xfh.mid.db.indexSearchSql.LIMIT_SQL"/>
+		
+	</select>  	
+	
+	    
+</mapper>

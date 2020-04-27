@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="org.xfh.mid.db.dao.FinanceDao">
+
+	<sql id="get_finance_income_list">
+		select 
+			a.*
+			,fbank.name as fromBankName
+			,fbranch.name as fromBranchName
+			,tbank.name as toBankName
+			,tbranch.name as toBranchName
+					
+			from FinanceIncome as a
+		
+			left join Bank as fbank on fbank.id = a.fromBankId
+			left join Bank as fbranch on fbranch.id = a.fromBranchId
+			left join Bank as tbank on tbank.id = a.toBankId
+			left join Bank as tbranch on tbranch.id = a.toBranchId
+			
+		where 1=1 
+	
+	</sql>
+  
+	
+	
+	<select id="getFinanceIncomeVoIndexCount" resultType="int">  
+	
+		select count(ca_view.id) from ( 
+		
+			<include refid="get_finance_income_list"/>
+			
+			<include refid="org.xfh.mid.db.indexSearchSql.INDEX_SEARCH_FILTER_SQL"/>
+		
+			) as ca_view		
+		
+	</select>  	
+	
+	<select id="getFinanceIndexPageList" resultType="org.xfh.mid.vo.FinanceIncomeVo">  
+		
+		<include refid="get_finance_income_list"/>
+		
+		<include refid="org.xfh.mid.db.indexSearchSql.INDEX_SEARCH_FILTER_SQL"/>
+		
+		<include refid="org.xfh.mid.db.indexSearchSql.ORDER_BY_SQL"/>
+		
+		<include refid="org.xfh.mid.db.indexSearchSql.LIMIT_SQL"/>
+		
+	</select>  
+	
+	<select id="getById" resultType="org.xfh.mid.vo.FinanceIncomeVo">  
+		
+		<include refid="get_finance_income_list"/>
+		
+		and a.id = #{id}
+		
+	</select>  
+	
+    
+</mapper>

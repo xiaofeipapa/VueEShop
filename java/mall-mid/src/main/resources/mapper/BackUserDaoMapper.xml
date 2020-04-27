@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="org.xfh.mid.db.dao.BackUserDao">
+
+  <select resultType="org.xfh.mid.vo.BackMenuVo" parameterType="Long" id="getAllMenus">  
+  
+  	select * from BackMenu 
+  				  
+		order by parentId asc, `order` asc		
+	
+  </select>
+  
+  
+  <select resultType="org.xfh.mid.vo.BackMenuVo" parameterType="Long" id="getUserMenuList">  
+  
+  	select * from BackMenu 
+  	
+  		where id in 
+  			(
+			    select menuId from BackRoleMenu 
+			    	where  BackRoleMenu.roleId = (select roleId from BackUser where BackUser.id = #{userId})
+			    	
+			  )
+			  
+		order by parentId asc, `order` asc		
+	
+  </select>
+  
+  <select resultType="long" parameterType="Long" id="getMenuIdByRoleId">  
+    select menuId from BackRoleMenu 
+    	where  BackRoleMenu.roleId = #{roleId}
+	
+  </select>
+  
+  
+  <select id="getUserByPhone" parameterType="string"  resultType="org.xfh.mid.db.po.BackUser">  
+	   select a.*, b.label as exRoleLabel 
+	   
+	   		from BackUser as a 
+	   		
+	   		left join BackRole as b on a.roleId = b.id
+	   		
+	   		where a.phone = #{phone}
+	
+  </select>
+  
+  <delete id="deleteMenuByRoleId">  
+    delete from BackRoleMenu where roleId = #{roleId}
+	
+  </delete>
+    
+  <insert id ="insertMenuBatch" >
+          insert into BackRoleMenu
+          (roleId, menuId)
+          values
+           <foreach collection ="menuList" item="menuId" index= "index" separator =",">
+               (
+               #{roleId}, #{menuId}
+               )
+           </foreach >
+    </insert >
+    		
+	<select id="getBackUserCount" resultType="int">  
+	
+		select count(a.id) from BackUser as a
+			left join BackRole as b on a.roleId = b.id
+			
+		where 1 = 1
+			
+		<include refid="org.xfh.mid.db.indexSearchSql.INDEX_SEARCH_FILTER_SQL"/>
+		
+		
+	</select>
+  
+	<select id="getBackUserPage" resultType="HashMap">  
+
+		select a.*, b.label as exRoleLabel from BackUser as a
+			left join BackRole as b on a.roleId = b.id
+			
+		where 1 = 1
+			
+		<include refid="org.xfh.mid.db.indexSearchSql.INDEX_SEARCH_FILTER_SQL"/>
+		
+		<include refid="org.xfh.mid.db.indexSearchSql.ORDER_BY_SQL"/>
+		
+		<include refid="org.xfh.mid.db.indexSearchSql.LIMIT_SQL"/>
+	</select>  	
+		
+	<select id="getParentMenuIdsByChild" resultType="int">  
+	
+        select distinct parentId from BackMenu where parentId is not null 
+		
+			and id in
+			
+			(
+           <foreach collection ="menuList" item="menuId" index= "index" separator =",">
+               #{menuId}
+           </foreach >
+				
+				)
+		
+	</select>
+  
+</mapper>

@@ -1,0 +1,102 @@
+
+/** 变量配置 **/
+$g-main-width: 1200px;
+$g-main-color: #0ca47b;
+$g-grey-border: rgb(235, 235, 235);
+$g-box-border: 1px solid #dad8d8;
+$g-font-normal: #333;
+$g-red: #ff0000;
+
+// 通用文本框
+@mixin g-input {
+    
+    padding: 10px 40px 10px 10px;
+    border: none;
+    box-shadow: none;
+    border: 1px solid $g-main-color; 
+    border-top-left-radius: 0;
+    border-top-right-radius: 2px;
+    border-bottom-right-radius: 2px;
+    border-bottom-left-radius: 0;
+    outline-style: none ;
+    outline-width: 0px ;
+    text-shadow: none ;
+    -webkit-appearance: none ;
+    -webkit-user-select: text ;
+    outline-color: transparent ;
+    box-shadow: none;
+}
+
+// 通用按钮
+@mixin g-button {
+    
+    padding: 10px 40px 10px 40px;
+    border: 1px solid $g-main-color; 
+    border-radius: 2px;
+    background: $g-main-color;
+    color: #fff;
+    text-align: center;;
+    cursor: pointer;
+}
+
+
+// 用于形成 100% 宽度
+@mixin g-page-row-wrapper {      
+    width: 100%;
+}  
+// 用于形成居中排列的行, 方便设置内容. 
+@mixin g-page-content-row {      
+    width: $g-main-width;
+    margin: 0 auto;
+}  
+ul li{
+    list-style: none;    
+}
+
+/** 数量调整控件 **/
+.g-qutity-box{
+    height: 30px;
+    line-height: 30px;
+    font-size: 16px;
+    border: $g-box-border;
+    width: 124px;
+    margin-left: 40px;
+    li{
+        float: left;
+        
+        .btn{
+            padding: 0px 2px 0px 2px;
+            width: 30px;
+            text-align: center;
+            border-right: $g-box-border;
+            cursor: pointer;
+        }
+        .btn.right{
+            border-left: $g-box-border;
+            border-right: none;
+        }
+        .qutext{
+            height: 100%;
+            input[type=text]{
+                text-align: center;
+                width: 50px;
+                border: none;
+                padding: 2px 2px;
+                outline: none;
+                background: transparent;
+            }
+        }
+    }
+}
+// select 控件
+.g-select {
+    width: 100px;
+    height: 30px;
+    font-size: 16px;
+}
+
+// 清除a标签默认样式
+a,a:link,a:visited,a:hover,a:active{
+    text-decoration: none;
+    color:inherit;
+}

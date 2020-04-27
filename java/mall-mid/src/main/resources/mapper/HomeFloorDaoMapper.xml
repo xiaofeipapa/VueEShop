@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="org.xfh.mid.db.dao.HomeFloorDao">
+
+  <select resultType="org.xfh.mid.vo.HomeFloorVo" id="getAllHomeFloor">  
+  
+  	select a.*
+  		,b.productCount  	
+  	
+  		 from HomeFloor as a
+  		 
+  		 left join (
+  		 	select count(productId) as productCount, floorId from HomeFloorProduct group by floorId 
+  		 ) as b on b.floorId = a.id
+  				  
+		order by a.`order` asc		
+	
+  </select>  
+  
+  <select resultType="Long" parameterType="Long" id="getProductIdsByFloor">  
+  
+  	select productId from HomeFloorProduct 
+  	
+  		where floorId = #{floorId}
+	
+  </select>
+  
+  
+</mapper>

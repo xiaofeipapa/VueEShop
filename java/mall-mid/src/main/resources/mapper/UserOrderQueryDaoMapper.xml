@@ -1,0 +1,248 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="org.xfh.mid.db.dao.UserOrderQueryDao">
+  
+  
+<!-- 基础的订单信息 -->
+  <sql id="order_view_sql">
+  
+		select a.*
+			,buyer.name as buyerName
+			,da.name as deliveryUser 
+							
+
+		 from UserOrder as a 
+		 
+		 left join Buyer as buyer on a.buyUserId = buyer.id
+		 
+		 left join DeliverAddress da 
+		 	on a.goodAddressId = da.id
+		 
+		 		   	
+  </sql>
+  
+<!-- 订单的where条件 -->
+  <sql id="order_filter_sql">
+  
+		
+		<if test="searchFilter.moreSql != null" > 
+		
+			${searchFilter.moreSql}
+			
+		</if>
+		<if test="searchFilter.likeValue != null" > 
+				
+			<if test="searchFilter.likeKeys !=null and searchFilter.likeKeys.length > 0">
+				and (
+			   	<foreach collection="searchFilter.likeKeys" item="item" index="index">
+			   		<if test="index > 0">
+			   			or 
+			   		</if>
+					( ${item} like #{searchFilter.likeValue} )
+				</foreach>
+				
+				)
+			
+			</if>
+				
+
+		</if>
+		 		   	
+  </sql>
+  
+  
+	<select id="getOrderCount" resultType="int">  
+	
+		select count(*)
+					
+		from (<include refid="order_view_sql"/>) as order_view
+				
+		where 1=1 
+		
+		<include refid="order_filter_sql"/>
+		
+	</select>  
+  
+  
+	<select id="getAllOrderPageList" resultType="org.xfh.mid.vo.UserOrderVo">  
+	
+		select order_view.* 
+					
+		from (<include refid="order_view_sql"/>) as order_view
+				
+		where 1=1 
+		
+		<include refid="order_filter_sql"/>
+		
+				
+		<choose>
+			<when test="searchFilter.orderBy != null and searchFilter.orderBy != ''">
+				order by ${searchFilter.orderBy}
+			</when>
+			<otherwise>
+				order by createTime asc
+			</otherwise>
+		</choose>
+		
+		limit #{searchFilter.offset},#{searchFilter.pageSize}
+	</select>  	
+	
+  
+	<select id="getClientOrderCount" resultType="int">  
+	
+		select count(order_view.id)
+					
+		from (<include refid="order_view_sql"/>) as order_view
+
+		
+		<!-- 企业名称 -->
+		 left join Buyer as cb 
+		 	on cb.id = order_view.buyUserId 
+				
+		where 1=1 
+		
+		<include refid="order_filter_sql"/>
+		
+	</select>  	
+  
+	<select id="getClientOrderPageList" resultType="org.xfh.mid.vo.UserOrderVo">  
+	
+		select order_view.* 
+		
+		,cb.name as clientName
+		,cb.creditAmount
+		,suc.useCreditAmount
+					
+		from (<include refid="order_view_sql"/>) as order_view
+
+		
+		<!-- 企业名称 -->
+		 left join Buyer as cb 
+		 	on cb.id = order_view.buyUserId 
+		 	
+		<!-- 信用债务 -->
+		left join (
+			<include refid="org.xfh.mid.db.dao.ClientBuyerDao.sum_use_credit"/>
+		) as suc on suc.clientId = order_view.buyUserId 
+		
+				
+		where 1=1 
+		
+		<include refid="order_filter_sql"/>
+		
+				
+		<choose>
+			<when test="searchFilter.orderBy != null and searchFilter.orderBy != ''">
+				order by ${searchFilter.orderBy}
+			</when>
+			<otherwise>
+				order by createTime asc
+			</otherwise>
+		</choose>
+		
+		limit #{searchFilter.offset},#{searchFilter.pageSize}
+	</select>  	
+	
+	<select id="getOrderByBizId" resultType="org.xfh.mid.vo.UserOrderVo">  
+	
+		select order_view_sql.* 
+					
+		from (<include refid="order_view_sql"/>) as order_view_sql
+				
+		where 1=1 and bizId = #{bizId}
+	</select>  	
+  
+  
+  <select id="getOrderWithItemsByBizId" parameterType="String"
+        resultMap="orderWithItemMap">
+        select * from UserOrder where bizId = #{bizId}
+    </select>
+    
+  <resultMap type="org.xfh.mid.vo.UserOrderVo" id="orderWithItemMap">
+    		
+         <id column="bizId" property="bizId"/>
+        
+        <!-- 一对多级联查询，ofType表示集合中的元素类型，将uid传递给selectOrdersByld -->
+        <collection 
+        	property="itemList" 
+        	select="getItemListByBizId"
+        	column="bizId"
+        	
+            >
+                        
+         </collection>
+            
+    </resultMap>
+    
+	<select id="getGoodAddressByBizId" parameterType="String" resultType="org.xfh.mid.db.po.DeliverAddress">  
+        select * from DeliverAddress where id = (
+        	select goodAddressId from UserOrder where bizId = #{bizId}
+        )
+        
+    </select>
+    
+    
+
+      <!-- 带调拨信息的orderItemVo -->
+	  <resultMap type="org.xfh.mid.vo.UserOrderItemVo" id="itemWithAllocMap">
+	        
+	        <!-- 发现一个奇怪的问题. 必须要有个id属性, 才能把id也查出来.  -->
+            <id column="id" property="id"/>
+            	
+	        <!-- 一对多级联查询，ofType表示集合中的元素类型，将uid传递给selectOrdersByld -->
+	        <collection 
+	        	property="allocList" 
+	        	select="org.xfh.mid.db.dao.UserOrderItemAllocInfoDao.getAllocInfoListByItemId"
+	        	column="id"
+	        	
+	            >
+	            	            
+	         </collection>
+	            
+	    </resultMap>
+  
+  
+	  <select id="getItemListByBizId" parameterType="String"
+	         resultMap="itemWithAllocMap">
+	        select * from UserOrderItem where orderBizId = #{bizId}
+	    </select>
+  
+  
+	  <select id="getItemByItemId" parameterType="Long"
+	         resultType="org.xfh.mid.vo.UserOrderItemVo">
+	        select 
+	        	item.*
+	        
+		        from UserOrderItem as item 
+		        		        
+		        left join Product as prod on prod.id = item.productId
+		        		        
+		        where item.id = #{itemId}
+	    </select>
+      
+    
+    
+  
+  
+	<select id="getOrderPageWithItems" resultMap="orderWithItemMap">  
+	
+		select order_view.* 
+					
+		from (<include refid="order_view_sql"/>) as order_view
+				
+		where 1=1 
+		
+		<include refid="order_filter_sql"/>
+		
+		<choose>
+			<when test="searchFilter.orderBy != null and searchFilter.orderBy != ''">
+				order by ${searchFilter.orderBy}
+			</when>
+			<otherwise>
+				order by createTime asc
+			</otherwise>
+		</choose>
+		
+		limit #{searchFilter.offset},#{searchFilter.pageSize}
+	</select>  	
+</mapper>

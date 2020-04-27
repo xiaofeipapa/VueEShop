@@ -1,0 +1,300 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="org.xfh.mid.db.dao.ProductQueryDao">
+
+<!-- 查出商品的名称(模型名称), 规格属性id组合和规格属性名称组合 -->
+  <sql id="product_view_sql">
+  
+		select 
+		
+			a.id, 
+			a.modalId, 
+			a.stockCat, 
+			a.createTime, 
+			a.updateTime, 
+			a.marketPrice, 
+			a.retailPrice,
+			a.dataStatus, 
+			a.sku,
+			
+		 	<!-- 总仓库库存 -->
+			c.warehouseStock, 
+		
+		 	<!-- 供应商数量 -->
+		 	sp.supplierCount, 
+						
+		 	<!-- 规格属性值信息 -->
+    		d.specValueString, 
+    		d.specValueIdString, 
+			
+			b.title as modalTitle, 
+			b.imageStr as modalImages, 
+			b.brandId			
+			,b.childCat1 as cat1
+							
+
+		 from Product as a 
+		 
+		 
+			 left join ProductModal as b on b.id = a.modalId
+			 			 			 				
+		 	<!-- 仓库库存信息 -->
+			left join (
+				select sum(stock) as warehouseStock, productId from WarehouseStock group by productId
+			) as c on a.id = c.productId
+			
+		 	<!-- 供应商数量 -->
+			left join (
+				select count(supplierId) as supplierCount, productId from SupplierProduct group by productId
+			) as sp on a.id = sp.productId
+			 			
+		 	<!-- 规格属性值信息 -->
+			LEFT JOIN
+			    (
+			    	
+					SELECT 
+				        GROUP_CONCAT(inner1.`specValueId`) as specValueIdString  , GROUP_CONCAT(inner1.`value`) AS specValueString, inner1.productId
+						FROM
+							(
+								(
+									select innerPsv.productId, innerPsv.specValueId, innerMsv.`value`
+					                
+					                from ProductSpecValue as innerPsv
+					                
+					                left join ModalSpecValue as innerMsv
+										on innerPsv.specValueId = innerMsv.id
+										
+				                )  as inner1
+				                    
+				                    
+				            )
+					GROUP BY productId
+				) 
+			AS d ON a.id = d.productId
+		 		   	
+  </sql>
+  
+  
+  <select 	resultType="org.xfh.mid.db.po.ProductModal" 
+  			parameterType="Long" 
+  			id="getModalById">
+  			
+
+	select a.* from ProductModal as a where a.id = #{modalId}
+	
+  </select>
+  
+  
+  
+	<select id="getModalIndexPageList" resultType="org.xfh.mid.vo.ProductModalVo">  
+
+		select 
+		
+			a.id, 
+			a.title, 
+			a.dataStatus, 
+			a.createTime, 
+            b.productCount
+
+		 from ProductModal as a 
+		 
+		 left join (
+		 	select modalId, count(id) as productCount from Product group by modalId
+		 )  as b  on  b.modalId = a.id
+         
+         where 1 = 1
+		
+		<if test="searchFilter.likeValue != null" > 
+		
+		and (
+			
+			(a.title like #{searchFilter.likeValue})
+			
+		
+		)		
+
+		</if>
+		
+		<if test="searchFilter.moreSql != null" > 
+		
+			${searchFilter.moreSql}
+			
+		</if>
+		
+				
+		<choose>
+			<when test="searchFilter.orderBy != null and searchFilter.orderBy != ''">
+				order by ${searchFilter.orderBy}
+			</when>
+			<otherwise>
+				order by createTime desc, updateTime desc
+			</otherwise>
+		</choose>
+		
+
+		limit #{searchFilter.offset},#{searchFilter.pageSize}
+	</select>  	
+  
+	<select id="getInstanceInModalIds" resultType="org.xfh.mid.db.po.Product">  
+	
+        
+		select * from Product
+	
+		where  1 = 1
+		
+		
+		<if test="idList != null and idList.size > 0" > 
+	        and modalId in 
+		
+		   	<foreach collection="idList" separator="," open="(" close=")" index="index" item="item">
+				#{item}
+			</foreach>
+	        
+		</if> 
+	</select>  	
+		
+  <select 	resultType="int" 
+  			parameterType="Long" 
+  			id="getProductCountByModalId">
+  			
+
+	select count(id) from Product where modalId = #{modalId}
+	
+  </select>
+  
+    
+	<select id="getProductVoPageList" resultType="org.xfh.mid.vo.ProductVo">  
+	
+		select prod_view.* , 
+			
+	 	<!-- 销售库存 -->
+		st.saleStock, 
+		
+	 	<!-- 报损信息 -->
+		e.totalDamage 
+		
+		from (<include refid="product_view_sql"/>) as prod_view
+								
+	 	<!-- 销售库存 -->
+		left join (
+			select sum(stock) as saleStock, productId from SaleStock group by productId
+		) as st on prod_view.id = st.productId
+	 
+	 	<!-- 报损信息 -->
+		left join (
+			select sum(quantity) as totalDamage, productId from ProductInItem where action='damage' group by productId
+		) as e on prod_view.id = e.productId
+	 		
+		where 1=1 
+		
+		<if test="searchFilter.likeValue != null" > 
+		
+		and (
+			
+			(modalTitle like #{searchFilter.likeValue})
+			
+			or 
+			
+			(sku like #{searchFilter.likeValue})
+		
+		)		
+
+		</if>
+		
+		<if test="searchFilter.moreSql != null" > 
+		
+			${searchFilter.moreSql}
+			
+		</if>
+				
+		<choose>
+			<when test="searchFilter.orderBy != null and searchFilter.orderBy != ''">
+				order by ${searchFilter.orderBy}
+			</when>
+			<otherwise>
+				order by modalTitle asc, updateTime desc
+			</otherwise>
+		</choose>
+		
+		
+
+		limit #{searchFilter.offset},#{searchFilter.pageSize}
+	</select>  	
+	
+	
+  
+	<select id="getProductCount" resultType="int">  
+	
+		select count(prod_view.id)
+		
+		from (<include refid="product_view_sql"/>) as prod_view
+				
+		where 1=1 
+		
+		<if test="searchFilter.likeValue != null" > 
+		
+		and (
+			
+			(prod_view.modalTitle like #{searchFilter.likeValue})
+			
+			or 
+			
+			(prod_view.sku like #{searchFilter.likeValue})
+		
+		)		
+
+		</if>
+		
+		<if test="searchFilter.moreSql != null" > 
+		
+			${searchFilter.moreSql}
+			
+		</if>
+		
+	</select>  	
+	
+		
+	<select id="getProductVoBySql" resultType="org.xfh.mid.vo.ProductVo">  
+	
+		select prod_view.* 
+		
+		from (<include refid="product_view_sql"/>) as prod_view
+				
+		
+		where 1=1 
+		
+		<if test="sqlFilter != null" > 
+		
+		${sqlFilter}
+
+		</if>
+		
+	</select>  	
+	
+	
+	  <resultMap type="org.xfh.mid.vo.ProductVo" id="productWithSupplier">
+	        
+	        <!-- 发现一个奇怪的问题. 必须要有个id属性, 才能把id也查出来.  -->
+            <id column="id" property="id"/>
+            	
+	        <!-- 一对多级联查询，ofType表示集合中的元素类型，将uid传递给selectOrdersByld -->
+	        <collection 
+	        	property="suppliers" 
+	        	select="org.xfh.mid.db.dao.SupplierDao.getSupplierProductList"
+	        	column="id"
+	        	
+	            >
+	            	            
+	         </collection>
+	            
+	    </resultMap>
+	
+	<select id="getEditFormById" resultMap="productWithSupplier">  
+	
+		<include refid="product_view_sql"/> where a.id = #{id}
+		
+	</select>  	
+	
+	
+	    
+</mapper>

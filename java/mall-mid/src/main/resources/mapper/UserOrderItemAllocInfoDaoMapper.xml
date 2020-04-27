@@ -1,0 +1,286 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="org.xfh.mid.db.dao.UserOrderItemAllocInfoDao">
+
+<!-- 本查询要确保先条件查询再union, 否则效率有影响 -->
+    
+	  <sql id="from_warehouse_sql">
+	  
+			select ai.* 
+				,w.name as fromName
+				,prod.modalTitle as modalTitle
+				,prod.specValueString as specValueString
+			
+				from UserOrderItemAllocInfo as ai
+						
+				left join Warehouse as w on w.id = ai.fromId									
+						
+				left join UserOrderItem as prod on prod.id = ai.itemId
+									
+			where 1=1 
+				
+				and ai.allocCat = 'WAREHOUSE'	
+			 		   	
+	  </sql>
+	  
+	  <sql id="from_supplier_sql">
+	  
+	  
+			select ai.* 
+				,su.name as fromName
+				,prod.modalTitle as modalTitle
+				,prod.specValueString as specValueString
+			
+				from UserOrderItemAllocInfo as ai
+						
+				left join Supplier as su on su.id = ai.fromId									
+						
+				left join UserOrderItem as prod on prod.id = ai.itemId
+									
+			where 1=1 
+						
+				and ai.allocCat = 'SUPPLIER'	
+			 		   	
+	  </sql>
+    
+	<select id="getAllocInfoListByItemId" resultType="org.xfh.mid.vo.UserOrderItemAllocInfoVo">  
+	
+		(
+			<include refid="from_warehouse_sql"/> and ai.itemId = #{itemId}		
+		)
+		
+		union
+		
+		(
+			<include refid="from_supplier_sql"/> and ai.itemId = #{itemId}
+		)
+		
+	</select>  
+	
+	
+	  
+	  <sql id="order_filter">
+	  
+			and ai.itemId in (
+				
+				select id from UserOrderItem where orderBizId = #{orderBizId}
+			
+			)
+			
+			<if test="allocCat != null">
+			and ai.allocCat = #{allocCat}
+			</if>
+			 		   	
+	  </sql>
+	
+	<select id="getAllocInfoListOfOrder" resultType="org.xfh.mid.vo.UserOrderItemAllocInfoVo">  
+	
+	  
+		(
+			<include refid="from_warehouse_sql"/> <include refid="order_filter"/>	 
+		)
+		
+		union
+		
+		(
+			<include refid="from_supplier_sql"/> <include refid="order_filter"/>
+		)
+								
+			
+		
+	</select>  
+	
+	<sql id="package_mapping_filter">
+	  
+			and ai.packageSn = #{packageSn}
+			 		   	
+	  </sql>
+	
+	<select id="getAllocInfoListOfPackage" resultType="org.xfh.mid.vo.UserOrderItemAllocInfoVo">  
+	
+		(
+			<include refid="from_warehouse_sql"/> <include refid="package_mapping_filter"/>	 
+		)
+		
+		union
+		
+		(
+			<include refid="from_supplier_sql"/> <include refid="package_mapping_filter"/>
+		)
+				
+	</select>  
+	
+	<resultMap type="org.xfh.mid.vo.UserOrderItemAllocInfoPackageVo" id="packageWithAllocItems">
+	        
+            <id column="sn" property="sn"/>
+            	
+	        <!-- 一对多级联查询，ofType表示集合中的元素类型，将uid传递给selectOrdersByld -->
+	        <collection 
+	        	property="mappingList" 
+	        	select="getAllocInfoListOfPackage"
+	        	column="sn"
+	        	
+	            >
+	            	            
+	         </collection>
+	            
+	    </resultMap>
+	    
+    <sql id="package_view_sql">
+    	select pn.*
+	        
+        	,w.name as warehouseName
+        	,bu.realName as createUserName	     
+        	,f_bu.realName as finishUserName   	
+        	,cinfo.plate as carPlate
+        	,cd.name as driverName
+        	,cd.phone as driverPhone
+        	,pl.name as outLogisticsName
+        	        
+        	from UserOrderItemAllocInfoPackage as pn 
+        
+	        left join Warehouse as w	on w.id = pn.warehouseId
+	        left join BackUser as bu on bu.id = pn.createUserId
+	        left join BackUser as f_bu on f_bu.id = pn.finishUserId
+	        left join CarInfo as cinfo	on cinfo.id = pn.carId
+	        left join CarDriver as cd	on cd.id = pn.carDriverId
+	        
+	        left join PartnerLogistics as pl	on pl.id = pn.outLogicsticsId
+	        
+	        	
+	        where 1=1
+    
+    </sql>
+	
+	
+	  <select id="getPackageListOfOrder" parameterType="String"
+	         resultMap="packageWithAllocItems">
+	        
+	        <include refid="package_view_sql"/>
+		        		        	        	
+				<if test="sqlFilter != null" > 
+				
+					${sqlFilter}
+					
+				</if>
+	    </select>
+	    
+	  <select id="getPackageIndexPageList" 
+	         resultMap="packageWithAllocItems">
+	        
+	        
+	        <include refid="package_view_sql"/>
+				
+			
+			<include refid="org.xfh.mid.db.indexSearchSql.INDEX_SEARCH_FILTER_SQL"/>
+			
+			<include refid="org.xfh.mid.db.indexSearchSql.ORDER_BY_SQL"/>
+			
+			<include refid="org.xfh.mid.db.indexSearchSql.LIMIT_SQL"/>
+	    </select>
+	    
+	  <select id="getPackageCount" 
+	         resultType="int">
+	        
+	      select count(pview.id) from 
+	      
+	      (
+	        
+	        <include refid="package_view_sql"/>
+				
+				<if test="searchFilter.likeValue != null" > 
+				
+				and (
+					
+					(pn.orderBizId like #{searchFilter.likeValue})
+				
+				)		
+		
+				</if>
+				
+				<if test="searchFilter.moreSql != null" > 
+				
+					${searchFilter.moreSql}
+					
+				</if>
+			) as pview
+	    </select>
+	
+	
+	  <select id="getPackageByOrderAndWarehouse" resultMap="packageWithAllocItems">
+	        
+	        select pn.*
+	        
+	        	,w.name as warehouseName
+	        	,bu.realName as createUserName	        	
+	        
+	        	from UserOrderItemAllocInfoPackage as pn 
+	        
+		        left join Warehouse as w	on w.id = pn.warehouseId
+		        left join BackUser as bu on bu.id = pn.createUserId
+		        	
+		        where 1=1
+		        		        	        	
+				<if test="orderBizId != null" > 
+				
+					and pn.orderBizId = #{orderBizId}
+					
+				</if>
+		        		        	        	
+				<if test="warehouseId != null" > 
+				
+					and pn.warehouseId = #{warehouseId}
+					
+				</if>
+	    </select>
+	    
+	    
+	  <delete id="deleteTempNote"  parameterType="String">  
+	    
+    	delete from  UserOrderItemAllocInfoPackage where orderBizId = #{bizId}
+    	and dataStatus = 'TEMP'
+	  </delete>
+	    
+	  <delete id="updateNoteStatusBySql">  
+	    
+    	update UserOrderItemAllocInfoPackage set dataStatus = #{dataStatus}
+    	
+    	where dataStatus = 'TEMP'
+    	
+    	${sqlFilter}
+	  </delete>
+	  
+	  <!-- 
+	  	注意: 在调拨的时候一个商品可能会分成两个调拨信息(1个在仓库, 1个跟供应商采购), 但这两条记录其实都是同一个商品, 所以应该sum起来. 
+	  
+	   -->
+	  <select id="getNeedPackageItems"  parameterType="String" 
+	  	resultType="org.xfh.mid.vo.UserOrderItemAllocInfoVo">
+	  	
+	  	
+	  	select 
+	  		sumView.totalQuantity
+	  		,sumView.itemId
+			,prod.modalTitle as modalTitle
+			,prod.specValueString as specValueString
+			,prod.imagePath
+	  		
+	  	
+	  		from (
+	  	
+			  	select sum(ai.quantity) as totalQuantity, ai.itemId
+					
+						from UserOrderItemAllocInfo as ai 
+		                
+		                where ai.packageSn = #{packageSn}
+		                
+		                group by ai.itemId
+		         ) as sumView
+	  							
+						
+			left join UserOrderItem as prod on prod.id = sumView.itemId
+	  
+	  </select>
+	
+  
+</mapper>

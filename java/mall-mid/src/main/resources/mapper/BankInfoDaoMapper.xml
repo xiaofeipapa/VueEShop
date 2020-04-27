@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="org.xfh.mid.db.dao.BankInfoDao">
+
+	<sql id="get_bank_list_sql">
+		select 
+			a.*
+			,b.name as parentName
+		
+			from Bank as a
+		
+			left join Bank as b on b.id = a.parentId
+			
+		where 1=1 
+	
+	</sql>
+  
+	
+	<select id="getBankCount" resultType="int">  
+	
+		select count(ca_view.id) from ( 
+		
+			<include refid="get_bank_list_sql"/>
+			
+			<include refid="org.xfh.mid.db.indexSearchSql.INDEX_SEARCH_FILTER_SQL"/>
+		
+			) as ca_view		
+		
+	</select>  	
+	
+	<select id="getBankPageList" resultType="org.xfh.dcore.vo.index.Level2Vo">  
+		
+		<include refid="get_bank_list_sql"/>
+		
+		<include refid="org.xfh.mid.db.indexSearchSql.INDEX_SEARCH_FILTER_SQL"/>
+		
+		<include refid="org.xfh.mid.db.indexSearchSql.ORDER_BY_SQL"/>
+		
+		<include refid="org.xfh.mid.db.indexSearchSql.LIMIT_SQL"/>
+		
+	</select>  
+  
+	
+	<sql id="get_bank_account_list_sql">
+		select 
+			a.*
+			,b.name as bankName
+			,c.name as branchName
+		
+			from BankAccount as a
+		
+			left join Bank as b on b.id = a.bankId
+			left join Bank as c on c.id = a.branchId
+			
+		where 1=1 
+	
+	</sql>
+	
+	<select id="getBankAccountCount" resultType="int">  
+	
+		select count(ca_view.id) from ( 
+		
+			<include refid="get_bank_account_list_sql"/>
+			
+			<include refid="org.xfh.mid.db.indexSearchSql.INDEX_SEARCH_FILTER_SQL"/>
+		
+			) as ca_view		
+		
+	</select>  	
+	
+	<select id="getBankAccountPageList" resultType="org.xfh.mid.vo.BankAccountVo">  
+		
+		<include refid="get_bank_account_list_sql"/>
+		
+		<include refid="org.xfh.mid.db.indexSearchSql.INDEX_SEARCH_FILTER_SQL"/>
+		
+		<include refid="org.xfh.mid.db.indexSearchSql.ORDER_BY_SQL"/>
+		
+		<include refid="org.xfh.mid.db.indexSearchSql.LIMIT_SQL"/>
+		
+	</select>  
+	
+    
+</mapper>

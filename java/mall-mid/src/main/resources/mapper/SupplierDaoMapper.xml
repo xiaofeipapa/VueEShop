@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="org.xfh.mid.db.dao.SupplierDao">
+    		    
+  
+	<select id="getSupplierProductList" resultType="org.xfh.mid.vo.SupplierProductVo">  
+
+		select 		
+			a.* 
+			,b.name as name
+
+		 from SupplierProduct as a 
+		 		 
+		 left join Supplier as b on b.id = a.supplierId
+		 		 
+		 where 1 = 1 		
+	
+		
+			and a.productId = #{productId}
+	</select>  
+  
+	<sql id="get_supplier_order_list">
+		select 
+			a.*
+			,b.name as supplierName
+            ,c.itemCount
+					
+			from SupplierOrder as a
+			
+			left join Supplier as b on b.id = a.supplierId
+			
+			left join (
+				select count(id) as itemCount , orderId from SupplierOrderItem group by orderId 
+			) as c on c.orderId = a.id
+			
+		where 1=1
+	
+	</sql>
+  
+	<sql id="get_supplier_order_with_items">
+		select 
+			a.*
+			,b.name as supplierName
+            ,c.itemCount
+					
+			from SupplierOrder as a
+			
+			left join Supplier as b on b.id = a.supplierId
+			
+			left join (
+				select count(id) as itemCount , orderId from SupplierOrderItem group by orderId 
+			) as c on c.orderId = a.id
+			
+		where 1=1
+	
+	</sql>
+	
+	<select id="getSupplierOrderCount" resultType="int">  
+	
+		select count(ca_view.id) from ( 
+		
+			<include refid="get_supplier_order_list"/>
+			
+			<include refid="org.xfh.mid.db.indexSearchSql.INDEX_SEARCH_FILTER_SQL"/>
+		
+			) as ca_view		
+		
+	</select>  	
+	
+	<select id="getSupplierOrderPageList" resultType="org.xfh.mid.vo.SupplierOrderVo">  
+		
+		<include refid="get_supplier_order_list"/>
+		
+		<include refid="org.xfh.mid.db.indexSearchSql.INDEX_SEARCH_FILTER_SQL"/>
+		
+		<include refid="org.xfh.mid.db.indexSearchSql.ORDER_BY_SQL"/>
+		
+		<include refid="org.xfh.mid.db.indexSearchSql.LIMIT_SQL"/>
+		
+	</select> 
+	
+	<select id="getChildList" resultType="org.xfh.mid.vo.SupplierOrderItemVo">  
+		select * from SupplierOrderItem where orderId = #{id}
+				
+	</select>  
+		
+	<resultMap type="org.xfh.mid.vo.SupplierOrderVo" id="orderWithItemsMap">
+	        
+           <id column="id" property="id"/>
+           	
+        <!-- 一对多级联查询，ofType表示集合中的元素类型，将uid传递给selectOrdersByld -->
+        <collection 
+        	property="products" 
+        	select="getChildList"
+        	column="id"
+        	
+            >
+            	            
+         </collection>
+            
+    </resultMap>
+	
+	<select id="getOrderForEdit" resultMap="orderWithItemsMap">  
+		
+		select 
+			a.*
+			,b.name as supplierName
+			,wh.name as warehouseName
+					
+			from SupplierOrder as a
+			
+			left join Supplier as b on b.id = a.supplierId
+			left join Warehouse as wh on wh.id = a.warehouseId
+			
+			where a.id = #{orderId}
+		
+	</select>  
+	
+	
+	<select id="getOrderItemList" resultType="org.xfh.mid.vo.SupplierOrderItemVo">  
+		select a.* 
+			,b.name as supplierName
+		
+		from SupplierOrderItem as a
+		
+		left join Supplier as b on b.id = a.supplierId
+		
+		
+		where orderId = #{orderId}
+						
+	</select>  
+  
+</mapper>

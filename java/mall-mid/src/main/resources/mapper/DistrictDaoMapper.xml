@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="org.xfh.mid.db.dao.DistrictDao">
+  
+	<select id="getDistrictPageListForSearch" resultType="org.xfh.mid.vo.DistrictDataVo">  
+
+		select 
+		
+			a.id, 
+			a.name, 
+			a.code, 
+			a.level, 
+			a.parentCode, 
+			b.id as parentId, 
+			b.name as parentName, 
+			c.id as rootId, 
+			c.name as rootName, 
+			c.code as rootCode
+
+		 from DistrictData as a 
+		 
+		 
+		 left join DistrictData as b on b.code = a.parentCode
+		 
+		 left join DistrictData as c on c.code = b.parentCode
+		 
+		 where 1 = 1 
+		
+	
+		<include refid="org.xfh.mid.db.indexSearchSql.INDEX_SEARCH_FILTER_SQL"/>
+		
+		<include refid="org.xfh.mid.db.indexSearchSql.ORDER_BY_SQL"/>
+		
+		<include refid="org.xfh.mid.db.indexSearchSql.LIMIT_SQL"/>
+	</select>  
+  
+	<select id="getDistrictVoByCode" resultType="org.xfh.mid.vo.DistrictDataVo">  
+
+		select 
+		
+			a.id, 
+			a.name, 
+			a.code, 
+			a.level, 
+			a.parentCode, 
+			b.id as parentId, 
+			b.name as parentName, 
+			c.id as rootId, 
+			c.code as rootCode, 
+			c.name as rootName
+
+		 from DistrictData as a 
+		 		 
+		 left join DistrictData as b on b.code = a.parentCode
+		 
+		 left join DistrictData as c on c.code = b.parentCode
+		 
+		 where 1 = 1 
+		 		
+		 and a.code = #{code}
+	</select>  	
+  
+</mapper>

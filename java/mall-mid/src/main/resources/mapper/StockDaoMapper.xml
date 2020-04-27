@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="org.xfh.mid.db.dao.StockDao">
+  
+	
+	<select id="getSaleStockBySql" resultType="org.xfh.mid.vo.SaleStockVo">  
+	
+		select a.*
+			,prod.stockCat 
+		
+			from SaleStock as a
+		
+		left join Product as prod on a.productId = prod.id
+		
+		where 1 = 1 
+				
+        ${sqlFilter}
+		
+	</select>  	
+	
+	
+    <sql id="warehouse_stock_page_filter_sql">
+  
+		<if test="searchFilter.likeValue != null" > 
+				
+			<if test="searchFilter.likeKeys !=null and searchFilter.likeKeys.length > 0">
+				and (
+			   	<foreach collection="searchFilter.likeKeys" item="item" index="index">
+			   		<if test="index > 0">
+			   			or 
+			   		</if>
+					( ${item} like #{searchFilter.likeValue} )
+				</foreach>
+				
+				)
+			
+			</if>
+				
+
+		</if>
+		 
+		<if test="searchFilter.moreSql != null" > 
+		
+			${searchFilter.moreSql}
+			
+		</if>
+		
+  </sql>
+	
+	<select id="getWarehouseStockCount" resultType="int">  
+	
+		select count(a.id)
+
+		 from WarehouseStock as a 
+		 		 
+		 left join Warehouse as b on b.id = a.warehouseId
+		 
+		 left join ( <include refid="org.xfh.mid.db.dao.ProductQueryDao.product_view_sql"/>) as prod 
+		 	on prod.id = a.productId 
+		 		 
+		 		 
+		 where 1 = 1 
+		 
+		 <include refid="warehouse_stock_page_filter_sql"/>
+				
+	</select>
+	
+	<select id="getWarehouseStockPageList" resultType="org.xfh.mid.vo.WarehouseStockVo">  
+
+		select 
+		
+			a.* , 
+			b.name as warehouseName, 
+			prod.modalTitle, 
+			prod.specValueString
+
+		 from WarehouseStock as a 
+		 
+		 
+		 left join Warehouse as b on b.id = a.warehouseId
+		 
+		 left join ( <include refid="org.xfh.mid.db.dao.ProductQueryDao.product_view_sql"/>) as prod 
+		 	on prod.id = a.productId 
+		 		 
+		 		 
+		 where 1 = 1 
+		 
+		 <include refid="warehouse_stock_page_filter_sql"/>
+				
+		<choose>
+			<when test="searchFilter.orderBy != null and searchFilter.orderBy != ''">
+				order by ${searchFilter.orderBy}
+			</when>
+			<otherwise>
+				order by updateTime desc,warehouseId desc,  modalTitle asc
+			</otherwise>
+		</choose>
+		
+		
+
+		limit #{searchFilter.offset},#{searchFilter.pageSize}
+		
+	</select>  	
+	
+	<update id="updateWarehouseStock">
+	
+		update WarehouseStock set stock = #{stock}
+		
+			where warehouseId = #{id} and productId = #{productId}
+	
+	</update>
+	
+	<select id="getWarehouseStock" resultType="java.lang.Integer">  
+	
+		select stock 
+		
+		 from WarehouseStock 
+		 		 
+			where warehouseId = #{id} and productId = #{productId}
+				
+	</select>
+	
+	<select id="checkNoStockProduct" resultType="int">  
+	
+		select count(prod.id)
+		
+		from Product as prod
+		
+		left join WarehouseStock as ws
+			on ws.productId = prod.id
+		
+		where prod.id in (#{productIdStr}) and prod.stockCat = 1 and stock is Null
+				
+	</select>
+    
+</mapper>

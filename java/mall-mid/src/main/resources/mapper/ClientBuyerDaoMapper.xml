@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="org.xfh.mid.db.dao.ClientBuyerDao">
+
+
+	
+  <select id="getClientFullDetail" parameterType="Long"
+        resultType="org.xfh.mid.vo.ClientBuyerVo">
+       
+        select a.* 
+        	, suc.useCreditAmount
+        
+        from Buyer as a
+        
+		<!-- 信用债务 -->
+		left join (
+			<include refid="sum_use_credit"/>
+		) as suc on suc.clientId = a.id 
+        		
+		where 1=1 
+        
+        and a.id = #{clientId}
+    </select>
+
+	<sql id="sum_use_credit">
+	
+		 select sum(a.fee) as useCreditAmount, a.clientId 
+		 
+		 from ClientCreditItem as a 
+		 
+		where a.itemCat = 'DEBT' and a.repayFlag = 'N'
+		
+		group by clientId
+	
+	</sql>
+	    
+	<sql id="get_debt_client">
+	
+        select a.* 
+        	, suc.useCreditAmount
+        	, fi.noUserIncomeCount
+        
+        from Buyer as a
+        
+		<!-- 信用债务 -->
+		left join (
+			<include refid="sum_use_credit"/>
+		) as suc on suc.clientId = a.id 
+        
+		<!-- 未使用进账, 字符串join要用trim -->
+		left join (
+			select count(id) as noUserIncomeCount, trim(fromUserName) as fromUserName from FinanceIncome 
+				where useFlag = 'N' 
+                group by fromUserName
+                
+		) as fi on fi.fromUserName = trim(a.name)
+		
+		where 1=1 
+		
+		and useCreditAmount > 0
+        
+	
+	</sql>
+	
+	  <select id="getDebitClient" parameterType="Long"
+	        resultType="org.xfh.mid.vo.ClientBuyerVo">
+	       
+			<include refid="get_debt_client"/>
+	        
+	        and a.id = #{clientId}
+	    </select>
+	    
+	<select id="getDebitClientCount" resultType="int">  
+	
+		select count(ca_view.id) from ( 
+		
+			<include refid="get_debt_client"/>
+			
+			<include refid="org.xfh.mid.db.indexSearchSql.INDEX_SEARCH_FILTER_SQL"/>
+		
+			) as ca_view		
+		
+	</select>  	
+	
+	<select id="getDebitClientPageList" resultType="org.xfh.mid.vo.ClientBuyerVo">  
+		
+		<include refid="get_debt_client"/>
+		
+		<include refid="org.xfh.mid.db.indexSearchSql.INDEX_SEARCH_FILTER_SQL"/>
+		
+		<include refid="org.xfh.mid.db.indexSearchSql.ORDER_BY_SQL"/>
+		
+		<include refid="org.xfh.mid.db.indexSearchSql.LIMIT_SQL"/>
+		
+	</select>  
+	
+	
+	<select id="getDebtItemList" resultType="org.xfh.mid.vo.ClientCreditItemVo">  
+		
+		 select a.*
+		 	, b.name as clientName
+		 
+		 from ClientCreditItem as a 
+		 
+		 left join Buyer as b on b.id = a.clientId  
+		 
+		where a.itemCat = 'DEBT' and a.repayFlag = 'N'
+		
+		<if test="clientId != null and clientId != ''">
+		and a.clientId = #{clientId}		
+		</if>
+	
+		
+	</select>  
+          
+</mapper>

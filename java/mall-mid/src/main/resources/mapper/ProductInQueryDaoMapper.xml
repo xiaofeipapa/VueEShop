@@ -1,0 +1,210 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="org.xfh.mid.db.dao.ProductInQueryDao">
+  
+	<select id="getProductInIndexPageList" resultType="org.xfh.mid.vo.ProductInBatchVo">  
+
+		select 
+		
+			a.*, 
+            b.inCount, 
+            c.damageCount, 
+            bu.realname as createUserName
+            ,wh.name as warehouseName
+            ,cf.plate as carPlate
+            ,cd.name as driverName
+            ,cd.phone as driverPhone
+
+		 from ProductInBatch as a 
+		 
+		 left join (
+		 	select batchId, count(id) as inCount from ProductInItem where `action`='stock' group by batchId
+		 )  as b  on  b.batchId = a.id
+		 
+		 left join (
+		 	select batchId, count(id) as damageCount from ProductInItem where `action`='damage'  group by batchId
+		 )  as c  on  c.batchId = a.id
+		 
+		 left join BackUser as bu on bu.id = a.createUserId 		 	
+		 
+		 left join Warehouse as wh on wh.id = a.warehouseId 
+		 
+		 left join CarInfo cf on cf.id = a.carId 
+		 
+		 left join CarDriver cd on cd.id = a.carDriverId
+         
+         where 1 = 1
+		
+		<if test="searchFilter.likeValue != null" > 
+		
+		and (
+			
+			(bu.realName like #{searchFilter.likeValue})
+			
+			or 
+			
+			(bu.phone like #{searchFilter.likeValue})
+			
+			or 
+			
+			(a.shipNo like #{searchFilter.likeValue})
+			
+			or 
+			
+			(cf.plate like #{searchFilter.likeValue})
+			
+			or 
+			
+			(cd.name like #{searchFilter.likeValue})
+			
+			or 
+			
+			(cd.phone like #{searchFilter.likeValue})
+		
+		)		
+
+		</if>
+		
+		<if test="searchFilter.moreSql != null" > 
+		
+			${searchFilter.moreSql}
+			
+		</if>
+		
+
+		limit #{searchFilter.offset},#{searchFilter.pageSize}
+	</select>  	
+	
+	
+	<select id="getBatchDetailById" resultType="org.xfh.mid.vo.ProductInBatchVo">  
+
+		select 
+		
+			a.*, 
+			w.name as warehouseName, 
+            bu.realname as createUserName
+            ,cf.plate as carPlate
+            ,cd.name as driverName
+            ,cd.phone as driverPhone
+
+		 from ProductInBatch as a 
+		 
+		 left join Warehouse as w on w.id = a.warehouseId
+		 
+		 left join BackUser as bu on bu.id = a.createUserId 	
+		 
+		 left join CarInfo cf on cf.id = a.carId 
+		 
+		 left join CarDriver cd on cd.id = a.carDriverId	 	
+         
+         where 1 = 1
+                  
+		 and a.id = #{batchId}
+	</select>  
+	
+	
+	<select id="getInItemListByBatchId" resultType="org.xfh.mid.vo.ProductInItemVo">  
+
+		select *
+		
+		 from ProductInItem 	 	
+         
+         where 1 = 1
+                  
+		 and batchId = #{batchId}
+	</select>  	
+	
+
+<sql id="from_index_sql">
+	
+	 ProductInItem as a	 	
+		 
+		 left join Warehouse as w on w.id = a.warehouseId
+		 
+		 left join ProductInBatch as pb on pb.id = a.batchId
+		 		 
+		 left join BackUser as bu on bu.id = a.createUserId 	
+	        
+	        where 1 = 1 
+	        
+		<if test="searchFilter.likeValue != null" > 
+		
+		and (
+			
+			(bu.realName like #{searchFilter.likeValue})
+			
+			or 
+			
+			(bu.phone like #{searchFilter.likeValue})
+			
+			or 
+			
+			(pb.shipNo like #{searchFilter.likeValue})
+			
+			or 
+			
+			(a.modalTitle like #{searchFilter.likeValue})
+		
+		)		
+	
+		</if>
+	        
+		<if test="searchFilter.moreSql != null" > 
+		
+			${searchFilter.moreSql}
+			
+		</if>
+
+</sql>
+  	
+	<!-- ============== 批次细项分页的相关sql -->
+	
+	<select id="getInItemPageList" resultType="org.xfh.mid.vo.ProductInItemVo">  
+
+		select a.*, 			
+			w.name as warehouseName, 
+            
+            pb.LogisticsCat, 
+			pb.shipNo, 
+
+            bu.realname as createUserName
+		
+		 from 
+        	
+        	<include refid="from_index_sql"/>
+        	
+		<choose>
+			<when test="searchFilter.orderBy != null and searchFilter.orderBy != ''">
+				order by ${searchFilter.orderBy}
+			</when>
+			<otherwise>
+				order by createTime desc
+			</otherwise>
+		</choose>
+		
+
+		limit #{searchFilter.offset},#{searchFilter.pageSize}
+                  
+	</select>  	
+	
+	<select id="getInItemCount" resultType="int">  
+
+		select count(a.id) from 
+		
+        <include refid="from_index_sql"/>
+                  
+	</select>  	
+    
+	
+	<select id="sumProductStockByBatchId" resultType="int">  
+
+		select sum(quantity) as totalQuantity
+		
+		from ProductInItem  group by productId
+		
+		where `action` = 'stock'
+                  
+		 and batchId = #{batchId}
+	</select>  
+	
+</mapper>

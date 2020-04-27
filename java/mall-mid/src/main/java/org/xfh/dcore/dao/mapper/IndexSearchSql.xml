@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="org.xfh.dcore.dao.mapper.indexSearchSql">
+    		
+  <sql id="INDEX_SEARCH_FILTER_SQL">
+  
+		<if test="searchFilter.likeValue != null" > 
+				
+			<if test="searchFilter.likeKeys !=null and searchFilter.likeKeys.length > 0">
+				and (
+			   	<foreach collection="searchFilter.likeKeys" item="item" index="index">
+			   		<if test="index > 0">
+			   			or 
+			   		</if>
+					( `${item}` like #{searchFilter.likeValue} )
+				</foreach>
+				
+				)
+			
+			</if>
+				
+
+		</if>
+		
+		<if test="searchFilter.moreSql != null" > 
+		
+			${searchFilter.moreSql}
+			
+		</if>		
+	
+  </sql>
+      		
+  <sql id="ORDER_BY_SQL">
+		
+		<if test="searchFilter.orderByList != null and searchFilter.orderByList.size > 0" > 
+		
+		   	<foreach collection="searchFilter.orderByList" separator="," index="index" item="item">
+				order by ${item.name} ${item.orderBy}
+			</foreach>
+			
+		</if>	  
+  </sql>
+    		
+  <sql id="LIMIT_SQL">		
+		limit #{searchFilter.offset},#{searchFilter.pageSize}
+  </sql>
+  
+</mapper>

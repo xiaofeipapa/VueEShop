@@ -1,0 +1,15 @@
+2020-04-19 21:07:40.204 [restartedMain] INFO  org.wfh.web.MallWebApp - Starting MallWebApp on cys with PID 5256 (/home/cys/svn_com/xfhMall/java/mall-web/target/classes started by cys in /home/cys/svn_com/xfhMall/java/mall-web)
+2020-04-19 21:07:40.204 [restartedMain] INFO  org.wfh.web.MallWebApp - The following profiles are active: dev
+2020-04-19 21:07:40.327 [restartedMain] INFO  o.s.c.s.PostProcessorRegistrationDelegate$BeanPostProcessorChecker - Bean 'org.springframework.amqp.rabbit.annotation.RabbitBootstrapConfiguration' of type [org.springframework.amqp.rabbit.annotation.RabbitBootstrapConfiguration$$EnhancerBySpringCGLIB$$227d64d1] is not eligible for getting processed by all BeanPostProcessors (for example: not eligible for auto-proxying)
+2020-04-19 21:07:40.366 [restartedMain] INFO  o.s.boot.web.embedded.tomcat.TomcatWebServer - Tomcat initialized with port(s): 12000 (http)
+2020-04-19 21:07:40.366 [restartedMain] INFO  org.apache.coyote.http11.Http11NioProtocol - Initializing ProtocolHandler ["http-nio-12000"]
+2020-04-19 21:07:40.366 [restartedMain] INFO  org.apache.catalina.core.StandardService - Starting service [Tomcat]
+2020-04-19 21:07:40.367 [restartedMain] INFO  org.apache.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/9.0.14]
+2020-04-19 21:07:40.370 [restartedMain] INFO  o.a.c.core.ContainerBase.[Tomcat].[localhost].[/] - Initializing Spring embedded WebApplicationContext
+2020-04-19 21:07:40.370 [restartedMain] INFO  org.springframework.web.context.ContextLoader - Root WebApplicationContext: initialization completed in 164 ms
+2020-04-19 21:07:40.569 [restartedMain] INFO  o.s.b.d.autoconfigure.OptionalLiveReloadServer - LiveReload server is running on port 35729
+2020-04-19 21:07:40.586 [restartedMain] INFO  org.apache.coyote.http11.Http11NioProtocol - Starting ProtocolHandler ["http-nio-12000"]
+2020-04-19 21:07:40.589 [restartedMain] INFO  o.s.boot.web.embedded.tomcat.TomcatWebServer - Tomcat started on port(s): 12000 (http) with context path ''
+2020-04-19 21:07:40.589 [restartedMain] INFO  org.wfh.web.MallWebApp - Started MallWebApp in 0.413 seconds (JVM running for 62.651)
+2020-04-19 21:07:40.591 [restartedMain] INFO  o.s.b.d.a.ConditionEvaluationDeltaLoggingListener - Condition evaluation unchanged
+2020-04-19 21:07:40.591 [restartedMain] INFO  org.wfh.web.MallWebApp - ==== MallWebApp 已启动

@@ -1,0 +1,273 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="org.xfh.dcore.dao.CommonDao">
+  
+  
+  <insert id="insertOne" flushCache="true"  useGeneratedKeys="true" keyProperty="dataMap.id">  
+	 
+    insert into ${tableName} 
+    
+   	<foreach collection="dataMap.keys" separator="," open="(" close=")" index="index" item="item">
+		`${item}`
+	</foreach>
+	
+	values	
+	
+   	<foreach collection="dataMap.values" separator="," open="(" close=")" index="index" item="item">
+		#{item}
+	</foreach>
+	
+  </insert>
+  
+  <update id="updateById">
+    update ${tableName} set
+
+   	<foreach collection="dataMap.keys" separator="," item="key_name">
+		`${key_name}` = #{dataMap[${key_name}]}
+	</foreach>
+
+	where id = #{id}
+
+  </update>
+  
+
+    <update id="updateByFilter">
+        update ${tableName} set
+
+        <foreach collection="dataMap.keys" separator="," item="key_name">
+            `${key_name}` = #{dataMap[${key_name}]}
+        </foreach>
+
+        where 1=1
+
+        <include refid="filter_sql"/>
+
+    </update>
+
+    <update id="updateInIds">
+        update ${tableName} set
+
+        <foreach collection="dataMap.keys" separator="," item="key_name">
+            `${key_name}` = #{dataMap[${key_name}]}
+        </foreach>
+
+        where 1=1
+		
+		<if test="idList != null and idList.size > 0" > 
+	       and id in 
+		
+		   	<foreach collection="idList" separator="," open="(" close=")" index="index" item="item">
+				#{item}
+			</foreach>
+	        
+		</if> 
+
+    </update>
+
+    <update id="updateBySql">
+        update ${tableName} set
+
+        <foreach collection="dataMap.keys" separator="," item="key_name">
+            `${key_name}` = #{dataMap[${key_name}]}
+        </foreach>
+
+        where 1=1
+		
+	    ${sqlFilter}	        
+
+    </update>
+
+    <update id="updateByCustomPk">
+        update ${tableName} set
+
+        <foreach collection="dataMap.keys" separator="," item="key_name">
+        
+			<if test="key_name != pkName" > 
+            	`${key_name}` = #{dataMap[${key_name}]}
+			</if> 
+        
+        </foreach>
+
+        where `${pkName}` = #{dataMap[${pkName}]}
+
+    </update>
+      
+  <update id="updateByParams">  
+    update ${tableName} set
+    
+   	<foreach collection="dataMap.keys" separator="," item="key_name">
+		`${key_name}` = #{dataMap[${key_name}]}
+	</foreach>
+		
+	where 1=1
+
+	<!-- 故意增加一个出错的设置, 以防止查询参数是空 -->
+	<if test="filterParams == null" > 
+		and xxxx is error
+	</if> 
+
+   	<foreach collection="filterParams.keys" item="key_name">
+		and `${key_name}` = #{filterParams[${key_name}]}
+	</foreach>
+	
+  </update>
+  
+  <delete id="deleteById">  
+    delete from ${tableName} where id = #{id}
+	
+  </delete>
+  
+  <delete id="deleteBySql">  
+    delete from ${tableName} where 1=1 ${sqlFilter}
+	
+  </delete>
+  
+  <select id="getFirstEntityId">  
+    select id from ${tableName} where `${fieldName}` = #{fieldValue} limit 0,1
+	
+  </select>
+  
+  <!-- ================================== 通用分页查询. 只适合无关联表的情况 ========================== -->
+  <sql id="filter_sql">
+  
+		<if test="searchFilter.likeValue != null" > 
+				
+			<if test="searchFilter.likeKeys !=null and searchFilter.likeKeys.length > 0">
+				and (
+			   	<foreach collection="searchFilter.likeKeys" item="item" index="index">
+			   		<if test="index > 0">
+			   			or 
+			   		</if>
+					( `${item}` like #{searchFilter.likeValue} )
+				</foreach>
+				
+				)
+			
+			</if>
+				
+
+		</if>
+		
+		<if test="searchFilter.moreSql != null" > 
+		
+			${searchFilter.moreSql}
+			
+		</if>
+		
+		
+		
+  </sql>
+
+	<select id="getListByFilter" resultType="HashMap">
+
+		select * from ${tableName} where 1 = 1
+		<include refid="filter_sql"/>
+
+		<choose>
+			<when test="searchFilter.orderBy != null and searchFilter.orderBy != ''">
+				order by ${searchFilter.orderBy}
+			</when>
+		</choose>
+	</select>
+
+	<select id="getListBySql" resultType="HashMap">
+
+		select * from ${tableName} where 1 = 1
+		
+		${filterSql}
+
+	</select>
+  
+	<select id="getPageListByFilter" resultType="HashMap">  
+
+		select * from ${tableName} where 1 = 1
+	    <include refid="filter_sql"/>
+
+		<choose>
+			<when test="searchFilter.orderBy != null and searchFilter.orderBy != ''">
+				order by ${searchFilter.orderBy}
+			</when>
+		</choose>
+
+		limit #{searchFilter.offset},#{searchFilter.pageSize}
+	</select>  	
+		
+	<select id="getCountByFilter" resultType="int">  
+	
+		select count(*) from ${tableName} where 1 = 1
+	    <include refid="filter_sql"/> 
+		
+	</select>
+		
+	<select id="getCountBySql" resultType="int">  
+	
+		select count(*) from ${tableName} where 1 = 1
+	    
+		${filterSql}
+		
+	</select>
+
+	<select id="getOneByField" resultType="HashMap">  
+	   select * from ${tableName} where `${fieldName}` = #{fieldValue} limit 0,1
+	</select> 
+
+	<select id="getById" resultType="HashMap">  
+	   select * from ${tableName} where id = #{id}
+	</select>  
+	<select id="getAll" resultType="HashMap">  
+	   select * from ${tableName}
+	</select>  
+	
+	<select id="getOneBySql" resultType="HashMap">  
+	   select * from ${tableName} where 1=1 
+		
+		<if test="sqlFilter != null">
+			${sqlFilter}
+		</if> 
+		
+		 limit 0,1
+	   
+	</select>  
+		
+	<select id="getMaxBySql" resultType="int">  
+	
+		select count(`${fieldName}`) from ${tableName} where 1 = 1
+	    
+		${filterSql}
+		
+	</select>
+	
+    <update id="subtractFieldBySql">
+        update ${tableName} set
+
+        `${fieldName}` = `${fieldName}` - #{theCount}
+
+        where 1=1
+
+		<if test="sqlFilter != null" > 
+			${sqlFilter}
+		</if>
+		
+    </update>
+	
+    <update id="addFieldBySql">
+        update ${tableName} set
+
+        `${fieldName}` = `${fieldName}` + #{theCount}
+
+        where 1=1
+
+		<if test="sqlFilter != null" > 
+			${sqlFilter}
+		</if>
+		
+    </update>
+		
+	<select id="sumFieldBySql" resultType="int">  
+	
+    select sum(`${fieldName}`)  from ${tableName} where 1=1 ${sqlFilter}
+    
+		
+	</select>
+      
+</mapper>

@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="org.xfh.mid.db.dao.PaymentLogQueryDao">
+  
+	<select id="getPaymentLogByBizId" parameterType="String" resultType="org.xfh.mid.vo.PaymentLogVo">  
+	
+	        select a.* 
+	        	,bu.realName as backUserName
+	        
+	        	from PaymentLog as a
+	        
+	        left join BackUser as bu on bu.id = a.backUserId	
+	        	
+	         where orderBizId = #{bizId}
+				
+	</select>  
+</mapper>

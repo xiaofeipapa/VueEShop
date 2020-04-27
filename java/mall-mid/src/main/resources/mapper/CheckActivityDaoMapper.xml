@@ -1,0 +1,224 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="org.xfh.mid.db.dao.CheckActivityDao">
+	  
+	  
+	  <sql id="get_check_activity_sql">
+	  
+			
+		select 
+		
+			a.*
+			, wh.name as warehouseName
+			, bu.realName as checkUserName
+			, bu.phone as checkUserPhone
+
+		 from UserCheckActivity as a 
+		 
+		 
+		 left join Warehouse as wh on wh.id = a.warehouseId
+		 left join BackUser as bu on bu.id = a.checkUserId
+		 
+		 where 1 = 1 	
+			
+			
+	  </sql>
+	  
+	<select id="getCheckActivityCount" resultType="int">  
+
+		select count(ca_view.id) from ( 
+		
+			<include refid="get_check_activity_sql"/>
+			
+			<include refid="org.xfh.mid.db.indexSearchSql.INDEX_SEARCH_FILTER_SQL"/>
+		
+			) as ca_view
+		 		 
+			
+	
+		
+	</select>  
+  
+	<select id="getCheckActivityPageList" resultType="org.xfh.mid.vo.UserCheckActivityVo">  
+		
+		<include refid="get_check_activity_sql"/>
+		
+		<include refid="org.xfh.mid.db.indexSearchSql.INDEX_SEARCH_FILTER_SQL"/>
+		
+		<include refid="org.xfh.mid.db.indexSearchSql.ORDER_BY_SQL"/>
+		
+		<include refid="org.xfh.mid.db.indexSearchSql.LIMIT_SQL"/>
+		
+	</select>  
+	
+	
+	<select id="getChildList" resultType="org.xfh.mid.vo.UserCheckProductVo">  
+	
+		select * from UserCheckProduct where parentId = #{id}
+				
+	</select>  
+	
+	<resultMap type="org.xfh.mid.vo.UserCheckProductVo" id="productWithResult">
+	        
+            <id column="id" property="id"/>
+            	
+	        <!-- 一对多级联查询，ofType表示集合中的元素类型，将uid传递给selectOrdersByld -->
+	        <collection 
+	        	property="resultList" 
+	        	select="getChildList"
+	        	column="id"
+	        	
+	            >
+	            	            
+	         </collection>
+	            
+	    </resultMap>
+	    
+	    
+	    
+  
+	<sql id="get_check_product_sql">  
+		
+		select uc.* 
+		
+			,prod.modalTitle
+			,prod.specValueString
+			,prod.sku
+			,prod.brandId
+			
+			,ws.stock as warehouseStock
+			,wh.name as warehouseName
+		
+		
+		from UserCheckProduct as uc
+		
+			left join WarehouseStock as ws
+				on ws.warehouseId = uc.warehouseId and ws.productId = uc.productId 
+			
+			left join (				
+				<include refid="org.xfh.mid.db.dao.ProductQueryDao.product_view_sql"/>
+			) as prod on prod.id = uc.productId
+			
+			left join Warehouse as wh on wh.id = uc.warehouseId 
+			
+				
+		where parentId is null
+		
+	</sql>  
+	    
+  
+	<select id="getCheckProducts" resultMap="productWithResult">  
+		
+			<include refid="get_check_product_sql"/>
+
+			and activityId = #{activityId}
+		
+	</select>  
+	
+		  
+	<sql id="select_warehouse_product_view">
+	
+		select 
+			ws.warehouseId
+			,ws.stock as warehouseStock
+			,ws.productId
+			,hou.name as warehouseName
+			,prod.modalTitle
+			,prod.specValueString
+			,prod.sku
+			,prod.brandId
+			,prod.updateTime
+			
+			
+		from WarehouseStock as ws
+		
+		left join Warehouse as hou on hou.id = ws.warehouseId 
+		
+		left join (
+			<include refid="org.xfh.mid.db.dao.ProductQueryDao.product_view_sql"/>
+		) as prod on prod.id = ws.productId
+	
+	
+		where 1=1 
+		
+		
+		<if test="searchFilter.likeValue != null" > 
+		
+		and (
+			
+			(modalTitle like #{searchFilter.likeValue})
+			
+			or 
+			
+			(sku like #{searchFilter.likeValue})
+		
+		)		
+
+		</if>
+		
+		<if test="searchFilter.moreSql != null  and searchFilter.moreSql != ''" > 
+		
+			${searchFilter.moreSql}
+			
+		</if>
+	
+	</sql>
+	
+  
+	<select id="getWarehouseProductCount" resultType="int">  
+	
+		select count(a.warehouseId)
+		
+		from (
+			<include refid="select_warehouse_product_view"/>
+			
+			) as a 
+				
+		
+	</select>  	
+		
+	<select id="getWarehouseProductPageList" resultType="org.xfh.mid.vo.WarehouseProductVo">  
+	
+		<include refid="select_warehouse_product_view"/>
+						
+		<choose>
+			<when test="searchFilter.orderBy != null and searchFilter.orderBy != ''">
+				order by ${searchFilter.orderBy}
+			</when>
+			<otherwise>
+				order by warehouseId desc, prod.updateTime desc, modalTitle asc
+			</otherwise>
+		</choose>
+		
+
+		limit #{searchFilter.offset},#{searchFilter.pageSize}
+			
+	</select>  	
+  
+	
+  
+	<select id="getCheckProductCount" resultType="int">  
+	
+		select count(a.id)
+		
+		from (
+			<include refid="get_check_product_sql"/>
+			
+			) as a 
+				
+		
+	</select>  	
+	
+	<select id="getCheckProductPageList" resultMap="productWithResult">  
+		
+		<include refid="get_check_product_sql"/>
+		
+		<include refid="org.xfh.mid.db.indexSearchSql.INDEX_SEARCH_FILTER_SQL"/>
+		
+		<include refid="org.xfh.mid.db.indexSearchSql.ORDER_BY_SQL"/>
+		
+		<include refid="org.xfh.mid.db.indexSearchSql.LIMIT_SQL"/>
+		
+	</select>  
+		
+</mapper>
